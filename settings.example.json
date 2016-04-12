@@ -1,0 +1,14 @@
+{
+  "config": {
+    "node": {
+      "token": ""
+    },
+    "iotronic": {
+      "registration-agent": {
+        "url": "",
+        "realm": "",
+        "port": ""
+      }
+    }
+  }
+}
