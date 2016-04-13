@@ -3,6 +3,10 @@
     "node": {
       "token": ""
     },
+    "log": {
+      "logfile": "/var/log/s4t-lightning-rod.log",
+      "loglevel": "info"
+    },
     "iotronic": {
       "registration-agent": {
         "url": "",
