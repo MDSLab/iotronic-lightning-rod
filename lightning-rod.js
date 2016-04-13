@@ -76,7 +76,7 @@ function checkSettings(callback){
 	  
 	    logger.error('[SYSTEM] - Board to be registered without token!'); 
 	    check_response = false;
-	    process.kill();
+	    process.exit();
 
 	  }
 	  else{
@@ -185,7 +185,7 @@ function checkSettings(callback){
 	logger = log4js.getLogger('main');  
 	
 	logger.error('[SYSTEM] - '+ err);
-	process.kill();
+	process.exit();
 
     }  
 	  
@@ -342,7 +342,7 @@ function manage_WAMP_connection (session, details){
             },
             function (error) {
                 logger.error("Registration failed:", error);
-		process.kill();
+		process.exit();
             }
         );
         
