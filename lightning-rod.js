@@ -82,6 +82,7 @@ function checkSettings(callback){
 	  else{
 	    logger.info('[SYSTEM] - Board to be registered with token ' + token);
 	    check_response = true;
+	    registration = true;
 	  }
 	
 	}else {
@@ -89,77 +90,55 @@ function checkSettings(callback){
 	  logger.info('[SYSTEM] ...uuid -> ' + uuid); 
 	  if (token != "") logger.info('[SYSTEM] ...token -> ' + token);
 	}
-	/*
-	var node_cfg_list = ['token', 'uuid'];
-	node_cfg_list.forEach(function(param) {
-	  
-	      logger.debug('[SYSTEM] ...'+param+' analysing...'); 
 
-	      try{   
-		
-		  value = nconf.get('config:node:'+param);
-
-		  if (value === undefined){
-		    logger.warn('[SYSTEM] - '+param+' not defined!'); 
-		    check_response = false;
-		    
-		  }else if (value === ""){
-		    logger.warn('[SYSTEM] - '+param+' not specified!'); 
-		    check_response = false;
-		  
-		  }else{
-		   if(check_response != false) check_response = true;
-		  }	
-		  
-		  
-	      }
-	      catch(err){
-		  logger.error('[SYSTEM] - Error in parsing settings.json: '+ err);
-		  check_response = false;
-
-	      }      
-	  
-	});
-	*/
 	
 	// IOTRONIC ANALYSIS
 	var iotronic_cfg_list = ['registration-agent', 'command-agent'];
 	var agent_cfg_list = ['url', 'realm', 'port'];
+	
 	logger.debug('[SYSTEM] - Iotronic parameters:'); 
+	
 	iotronic_cfg_list.forEach(function(iotronic_param) {
-	  
-	      logger.debug('[SYSTEM] ...'+iotronic_param+' analysing...'); 
 	      
-	      agent_cfg_list.forEach(function(agent_param) {
+	      
+	      
+	      if ( (registration === true && iotronic_param === 'registration-agent') || (registration === false && iotronic_param === 'command-agent') ){
+		
+		  logger.debug('[SYSTEM] ...'+iotronic_param+' analysing...'); 
+		  
+		  agent_cfg_list.forEach(function(agent_param) {
 
-		    //logger.debug('[SYSTEM] ......'+agent_param+' analysing...'); 
-		    try{   
-		      
-			value = nconf.get('config:iotronic:'+iotronic_param+':'+agent_param);
-
-			if (value === undefined){
-			  logger.warn('[SYSTEM] ......'+agent_param+' not defined!'); 
-			  check_response = false;
+			//logger.debug('[SYSTEM] ......'+agent_param+' analysing...'); 
+			try{   
 			  
-			}else if (value === ""){
-			  logger.warn('[SYSTEM] ......'+agent_param+' not specified!'); 
-			  check_response = false;
-			
-			}else{
-			  logger.debug('[SYSTEM] ......'+agent_param+' -> '+ value); 
-			  if(check_response != false) check_response = true;
-				      
-			}	
-			
-			
-		    }
-		    catch(err){
-			logger.error('[SYSTEM] - Error in parsing settings.json: '+ err);
-			check_response = false;
+			    value = nconf.get('config:iotronic:'+iotronic_param+':'+agent_param);
 
-		    }      
-	      
-	      });
+			    if (value === undefined){
+			      logger.warn('[SYSTEM] ......'+agent_param+' not defined!'); 
+			      check_response = false;
+			      
+			    }else if (value === ""){
+			      logger.warn('[SYSTEM] ......'+agent_param+' not specified!'); 
+			      check_response = false;
+			    
+			    }else{
+			      logger.debug('[SYSTEM] ......'+agent_param+' -> '+ value); 
+			      if(check_response != false) check_response = true;
+	    
+			      if(registration === false) registration = true;
+					  
+			    }	
+			    
+			    
+			}
+			catch(err){
+			    logger.error('[SYSTEM] - Error in parsing settings.json: '+ err);
+			    check_response = false;
+
+			}      
+		  
+		  });
+	      }
 	  
 	});
 	
@@ -175,10 +154,10 @@ function checkSettings(callback){
 	
     }
     catch(err){
-	//main logging configuration                                                                
+	// DEFAULT LOGGING
 	log4js = require('log4js');
 	log4js.loadAppender('file');    
-	logfile = '/var/log/s4t-lightning-rod.log';
+	logfile = './s4t-lightning-rod.log';
 	log4js.addAppender(log4js.appenders.file(logfile));  
 
 	//service logging configuration: "main"                                                  
@@ -209,10 +188,11 @@ if (cluster.isMaster) {
 if (cluster.isWorker) {
 
     // GLOBAL VARIABLES
-    token = null;
+    token = null;		//Used only for the registration process
     autobahn = null;
-    uuid = null;
+    uuid = null;		//Used after the registration
     logger = null;
+    registration = false;	//By default set to false; It will be set at true only during the registration process...after that it will come back to be false.
 
 
     checkSettings(function(check){
@@ -226,7 +206,7 @@ if (cluster.isWorker) {
 	  if (!uuid) {
 	    
 	      // FIRST REGISTRATION
-	      logger.info('First registration on the cloud!')
+	      logger.info('[SYSTEM] - First registration on the cloud!')
 	      token = nconf.get('config:node:token');
 	      url=nconf.get('config:iotronic:registration-agent:url');
 	      port=nconf.get('config:iotronic:registration-agent:port');
@@ -280,10 +260,10 @@ function create_wamp_connection(url,port,wampRealm,cb){
     
     wampConnection.onopen = function (session, details) {
 
-        logger.debug('[WAMP] - Connection to WAMP server '+ url +':'+port+' created successfully!');
-        logger.debug('[WAMP] - Connected to realm '+ wampRealm);
+        logger.info('[WAMP] - Connection to WAMP server '+ url +':'+port+' created successfully!');
+        logger.info('[WAMP] - Connected to realm '+ wampRealm);
         logger.info('[WAMP] - Session ID: '+ session._id);
-        logger.debug('Connection details: '+ JSON.stringify(details)); 
+        logger.debug('[WAMP] - Connection details:\n'+ JSON.stringify(details)); 
         
         manage_WAMP_connection(session, details)
         
@@ -292,17 +272,17 @@ function create_wamp_connection(url,port,wampRealm,cb){
     //This function is called if there are problems with the WAMP connection
     wampConnection.onclose = function (reason, details) {
         
-        logger.error('WAMP: Error in connecting to WAMP server!');
-        logger.error('- Reason: ' + reason);
-        logger.error('- Reconnection Details: ');
-        logger.error("  - retry_delay:", details.retry_delay);
-        logger.error("  - retry_count:", details.retry_count);
-        logger.error("  - will_retry:", details.will_retry);
+        logger.error('[WAMP] - Error in connecting to WAMP server!');
+        logger.error(' - Reason: ' + reason);
+        logger.error(' - Reconnection Details: ');
+        logger.error(' - retry_delay:', details.retry_delay);
+        logger.error(' - retry_count:', details.retry_count);
+        logger.error(' - will_retry:', details.will_retry);
 
         if(wampConnection.isOpen){logger.info("WAMP: connection is open!");}
-        else{logger.warn("WAMP: connection is closed!");}
+        else{logger.warn("[WAMP] - connection is closed!");}
         if(session.isOpen){logger.info("WAMP: session is open!");}
-        else{logger.warn("WAMP: session is closed!");}
+        else{logger.warn("[WAMP] - session is closed!");}
 
     };
     
