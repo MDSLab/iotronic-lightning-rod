@@ -1,0 +1,11 @@
+{
+
+    "name": "hello-module",
+    "module_id": "5e15085b-c35d-4d31-8186-e7f5e741d72a",
+    "version": "0.1",
+    "platforms": ["arduino-yun", "android"],
+    "authors": [{"Mario Rossi": "mario.rossi@net.com"}],
+    "requires": ["logger"],
+    "description": "The module allows to do ..."
+            
+}

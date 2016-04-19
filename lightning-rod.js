@@ -6,6 +6,8 @@
  * Copyright (c) 2014 2015 2016 Dario Bruneo, Francesco Longo, Andrea Rocco Lotronto, Arthur Warnier, Nicola Peditto, Fabio Verboso
  */
 
+fs = require('fs');
+path = require('path');
 
 
 function checkSettings(callback){
@@ -177,6 +179,7 @@ function checkSettings(callback){
 
 
 var cluster = require('cluster');
+
 if (cluster.isMaster) {
   cluster.fork();
 
@@ -265,7 +268,10 @@ function create_wamp_connection(url,port,wampRealm,cb){
         logger.info('[WAMP] - Session ID: '+ session._id);
         logger.debug('[WAMP] - Connection details:\n'+ JSON.stringify(details)); 
         
-        manage_WAMP_connection(session, details)
+        manage_WAMP_connection(session, details);
+	
+	
+	
         
     };
     
@@ -318,7 +324,7 @@ function manage_WAMP_connection (session, details){
         
         session.call('stack4things.register_uuid', [uuid, session._id]).then(
             function (response) {
-                logger.info("Registrated on Iotronic command wamp router");           
+                logger.info("Registered on Iotronic command wamp router");           
             },
             function (error) {
                 logger.error("Registration failed:", error);
@@ -327,8 +333,22 @@ function manage_WAMP_connection (session, details){
         );
         
         //register callback
-        session.register('stack4things.'+uuid+'.configure', configure_node);
-        logger.debug('Registered '+'stack4things.'+uuid+'.configure');
+        session.register('stack4things.'+uuid+'.configure', configure_node).then(
+	  
+	  function(result){
+	    
+	    logger.debug('[WAMP] - Registered '+'stack4things.'+uuid+'.configure');
+	    
+	    
+	  }
+	  
+	);
+	
+	moduleLoader(session);
+      
+	
+  
+        
         
     }
 };
@@ -384,3 +404,54 @@ function save_config(reboot){
         }
     });
 }
+
+
+
+
+	
+  
+
+function moduleLoader(session){
+  
+  logger.info("\n\n[MODULES] - Module loader starting...");
+  logger.debug('[MODULES] - WAMP SESSION status: '+session.isOpen);
+  
+  function getDirectories(srcpath) {
+      return fs.readdirSync(srcpath).filter(function(file) {
+	return fs.statSync(path.join(srcpath, file)).isDirectory();
+      });
+  }
+  
+
+  var modules_list = getDirectories("./modules");
+  logger.info("[MODULES] - Modules list: " + JSON.stringify(modules_list) );
+  
+  
+  modules_list.forEach(function(module) {
+    
+	var library_file = './modules/'+ module +'/main';
+	logger.info('[MODULES] - File: '+ library_file);
+	
+	var library = require(library_file);
+
+	library.init(module);
+	library.exportModuleCommands(session);
+	//logger.info (library.init() );    
+      
+  });
+    
+    
+  
+
+    
+  
+    
+
+}
+
+
+
+
+
+
+
