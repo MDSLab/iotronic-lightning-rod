@@ -1,20 +1,28 @@
 
 var logger = null;
 
-exports.init = function(path_name){
+exports.init = function(module_path_name){
     
     try{
       
-	modulen_cfg = JSON.parse(fs.readFileSync('./modules/'+path_name+'/module_cfg.json', 'utf8'));
-	module_name = modulen_cfg['name'];
+	module_name = module_path_name;
 	/*
-	nconf.file ({file: './modules/'+path_name+'/module_cfg.json'});
-	var module_name = nconf.get('name');
+	//module_cfg = JSON.parse(fs.readFileSync('./modules/'+module_name+'/module_cfg.json', 'utf8'));
+	module_cfg = JSON.parse(fs.readFileSync('./settings.json', 'utf8'));
+	module_name = module_cfg['modules:'+module_name+':name'];
 	*/
+      
+	//nconf.file ({file: './modules/'+module_name+'/module_cfg.json'});
+	nconf.file ({file: './settings.json'});
+	module_id = nconf.get('modules:'+module_name+':module_id');
+	
 	//service logging configuration: "managePlugins"   
 	logger = log4js.getLogger(module_name);
 
 	logger.info("Module name: "+module_name);
+	logger.info("Module uuid: "+module_id);
+	
+	
 
 	logger.info(exports.hello());
 
