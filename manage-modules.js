@@ -1,5 +1,6 @@
 
 var logger = log4js.getLogger('manageModules');
+nconf.file ({file: './settings.json'});
 
 exports.moduleLoader = function (session){
   
@@ -14,9 +15,7 @@ exports.moduleLoader = function (session){
       
 
       var modules_list = getDirectories("./modules");
-      logger.info("[MODULES] - Modules list: " + JSON.stringify(modules_list) );
-      
-      nconf.file ({file: './settings.json'});
+      logger.info("[MODULES] - Modules injected: " + JSON.stringify(modules_list) );
       
       modules_list.forEach(function(module) {
 	    
